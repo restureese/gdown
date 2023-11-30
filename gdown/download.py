@@ -159,27 +159,41 @@ def download(
             )
             continue
 
-        if res.headers["Content-Type"].startswith("text/html"):
-            m = re.search("<title>(.+)</title>", res.text)
-            if m and m.groups()[0].endswith(" - Google Docs"):
-                url = (
-                    "https://docs.google.com/document/d/{id}/export"
-                    "?format={format}".format(
-                        id=gdrive_file_id,
-                        format="docx" if format is None else format,
+        if "Content-Type" in res.headers:
+            if res.headers["Content-Type"].startswith("text/html"):
+                m = re.search("<title>(.+)</title>", res.text)
+                if m and m.groups()[0].endswith(" - Google Docs"):
+                    url = (
+                        "https://docs.google.com/document/d/{id}/export"
+                        "?format={format}".format(
+                            id=gdrive_file_id,
+                            format="docx" if format is None else format,
+                        )
                     )
-                )
-                continue
-            elif m and m.groups()[0].endswith(" - Google Sheets"):
-                url = (
-                    "https://docs.google.com/spreadsheets/d/{id}/export"
-                    "?format={format}".format(
-                        id=gdrive_file_id,
-                        format="xlsx" if format is None else format,
+                    continue
+                elif m and m.groups()[0].endswith(" - Google Sheets"):
+                    url = (
+                        "https://docs.google.com/spreadsheets/d/{id}/export"
+                        "?format={format}".format(
+                            id=gdrive_file_id,
+                            format="xlsx" if format is None else format,
+                        )
                     )
-                )
-                continue
-            elif m and m.groups()[0].endswith(" - Google Slides"):
+                    continue
+                elif m and m.groups()[0].endswith(" - Google Slides"):
+                    url = (
+                        "https://docs.google.com/presentation/d/{id}/export"
+                        "?format={format}".format(
+                            id=gdrive_file_id,
+                            format="pptx" if format is None else format,
+                        )
+                    )
+                    continue
+            elif (
+                "Content-Disposition" in res.headers
+                and res.headers["Content-Disposition"].endswith("pptx")
+                and format not in {None, "pptx"}
+            ):
                 url = (
                     "https://docs.google.com/presentation/d/{id}/export"
                     "?format={format}".format(
@@ -188,19 +202,6 @@ def download(
                     )
                 )
                 continue
-        elif (
-            "Content-Disposition" in res.headers
-            and res.headers["Content-Disposition"].endswith("pptx")
-            and format not in {None, "pptx"}
-        ):
-            url = (
-                "https://docs.google.com/presentation/d/{id}/export"
-                "?format={format}".format(
-                    id=gdrive_file_id,
-                    format="pptx" if format is None else format,
-                )
-            )
-            continue
 
         if use_cookies:
             if not osp.exists(osp.dirname(cookies_file)):
